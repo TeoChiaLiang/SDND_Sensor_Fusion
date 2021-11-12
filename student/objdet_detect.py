@@ -12,19 +12,23 @@
 
 # general package imports
 import numpy as np
+from shapely.geometry.base import EMPTY
 import torch
 from easydict import EasyDict as edict
 
 # add project directory to python path to enable relative imports
 import os
 import sys
+import copy
 PACKAGE_PARENT = '..'
 SCRIPT_DIR = os.path.dirname(os.path.realpath(os.path.join(os.getcwd(), os.path.expanduser(__file__))))
 sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, PACKAGE_PARENT)))
 
 # model-related
 from tools.objdet_models.resnet.models import fpn_resnet
-from tools.objdet_models.resnet.utils.evaluation_utils import decode, post_processing 
+from tools.objdet_models.resnet.models.model_utils import create_model as resnet
+from tools.objdet_models.resnet.utils.evaluation_utils import decode, post_processing
+from tools.objdet_models.resnet.utils.torch_utils import _sigmoid 
 
 from tools.objdet_models.darknet.models.darknet2pytorch import Darknet as darknet
 from tools.objdet_models.darknet.utils.evaluation_utils import post_processing_v2
@@ -61,7 +65,32 @@ def load_configs_model(model_name='darknet', configs=None):
         ####### ID_S3_EX1-3 START #######     
         #######
         print("student task ID_S3_EX1-3")
-
+        configs.model_path = os.path.join(parent_path, 'tools', 'objdet_models', 'resnet')
+        configs.pretrained_filename = os.path.join(configs.model_path, 'pretrained', 'fpn_resnet_18_epoch_300.pth')
+        configs.arch = 'fpn_resnet'
+        configs.pin_memory = True
+        configs.distributed = False  # For testing on 1 GPU only
+        configs.input_size = (608, 608)
+        configs.hm_size = (152, 152)
+        configs.down_ratio = 4
+        configs.max_objects = 50
+        configs.imagenet_pretrained = False
+        configs.head_conv = 64
+        configs.num_classes = 3
+        configs.num_center_offset = 2
+        configs.num_z = 1
+        configs.num_dim = 3
+        configs.num_direction = 2  # sin, cos
+        configs.heads = {
+            'hm_cen': configs.num_classes,
+            'cen_offset': configs.num_center_offset,
+            'direction': configs.num_direction,
+            'z_coor': configs.num_z,
+            'dim': configs.num_dim
+        }
+        configs.num_input_features = 4
+        configs.peak_thresh = 0.2
+        configs.conf_thresh = 0.5
         #######
         ####### ID_S3_EX1-3 END #######     
 
@@ -90,7 +119,7 @@ def load_configs(model_name='fpn_resnet', configs=None):
     configs.lim_r = [0, 1.0] # reflected lidar intensity
     configs.bev_width = 608  # pixel resolution of bev image
     configs.bev_height = 608 
-
+    
     # add model-dependent parameters
     configs = load_configs_model(model_name, configs)
 
@@ -98,6 +127,7 @@ def load_configs(model_name='fpn_resnet', configs=None):
     configs.output_width = 608 # width of result image (height may vary)
     configs.obj_colors = [[0, 255, 255], [0, 0, 255], [255, 0, 0]] # 'Pedestrian': 0, 'Car': 1, 'Cyclist': 2
 
+    configs.min_iou = 0.5
     return configs
 
 
@@ -118,7 +148,9 @@ def create_model(configs):
         ####### ID_S3_EX1-4 START #######     
         #######
         print("student task ID_S3_EX1-4")
-
+        configsNew = copy.deepcopy(configs)
+        configsNew.arch = 'fpn_resnet_18'
+        model = resnet(configsNew)
         #######
         ####### ID_S3_EX1-4 END #######     
     
@@ -168,6 +200,28 @@ def detect_objects(input_bev_maps, model, configs):
             #######
             print("student task ID_S3_EX1-5")
 
+            outputs['hm_cen'] = _sigmoid(outputs['hm_cen'])
+            outputs['cen_offset'] = _sigmoid(outputs['cen_offset'])
+            output_post = decode(outputs['hm_cen'], outputs['cen_offset'], outputs['direction'], outputs['z_coor'],outputs['dim'], K=50)
+            output_post = output_post.cpu().numpy().astype(np.float32)
+            output_post = post_processing(output_post, configs)
+            detections = []
+            for sample_i in range(len(output_post)):
+                if output_post[sample_i] is None:
+                    continue
+                detection = output_post[sample_i]
+                for sample_j in range(len(detection)):
+                    if detection[sample_j].size == 0:
+                        continue
+                    vObj = detection[sample_j]
+                    for obj in vObj:
+                        _score, x, y, z, h, w, l, yaw  = obj
+                        Obj_np = np.array([_score, x, y, z, h, w, l, yaw])
+                        if len(detections) == 0:
+                            detections = Obj_np
+                        else:
+                            detections = np.vstack((detections, Obj_np))
+                        # detections.append(np.array([_score, x, y,  z, h, w, l, yaw]))  
             #######
             ####### ID_S3_EX1-5 END #######     
 
@@ -178,16 +232,32 @@ def detect_objects(input_bev_maps, model, configs):
     # Extract 3d bounding boxes from model response
     print("student task ID_S3_EX2")
     objects = [] 
-
     ## step 1 : check whether there are any detections
-
+    count = 0
+    if len(detections) != 0:
         ## step 2 : loop over all detections
-        
+        for det in detections:
+            if len(det) == 0:
+                continue
             ## step 3 : perform the conversion using the limits for x, y and z set in the configs structure
-        
+            toBEV_X = (configs.lim_x[1] - configs.lim_x[0]) / configs.bev_height
+            toBEV_Y = (configs.lim_y[1] - configs.lim_y[0]) / configs.bev_width
+
+            det[0] = count
+            xNew = det[2]*toBEV_X + configs.lim_x[0]
+            yNew = det[1]*toBEV_Y + configs.lim_y[0]
+            det[1] = xNew
+            det[2] = yNew
+            det[3] = det[3] + configs.lim_z[0]
+            det[5] = det[5]*toBEV_Y
+            det[6] = det[6]*toBEV_X
+            det[7] = -1.0*det[7]
+
             ## step 4 : append the current object to the 'objects' array
-        
-    #######
+            # objects.append(det.tolist())
+            objects.append(det)
+            count = count + 1
+    ####### 
     ####### ID_S3_EX2 START #######   
     
     return objects    
