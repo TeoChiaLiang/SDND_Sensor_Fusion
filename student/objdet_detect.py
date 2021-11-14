@@ -89,7 +89,7 @@ def load_configs_model(model_name='darknet', configs=None):
             'dim': configs.num_dim
         }
         configs.num_input_features = 4
-        configs.peak_thresh = 0.2
+        #configs.peak_thresh = 0.2
         configs.conf_thresh = 0.5
         #######
         ####### ID_S3_EX1-3 END #######     
@@ -211,16 +211,14 @@ def detect_objects(input_bev_maps, model, configs):
                     continue
                 detection = output_post[sample_i]
                 for sample_j in range(len(detection)):
-                    if detection[sample_j].size == 0:
-                        continue
                     vObj = detection[sample_j]
+                    if vObj.size == 0:
+                        continue
                     for obj in vObj:
-                        _score, x, y, z, h, w, l, yaw  = obj
-                        Obj_np = np.array([_score, x, y, z, h, w, l, yaw])
                         if len(detections) == 0:
-                            detections = Obj_np
+                            detections = np.array([obj])
                         else:
-                            detections = np.vstack((detections, Obj_np))
+                            detections = np.vstack((detections, np.array([obj])))
                         # detections.append(np.array([_score, x, y,  z, h, w, l, yaw]))  
             #######
             ####### ID_S3_EX1-5 END #######     
