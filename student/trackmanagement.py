@@ -35,20 +35,29 @@ class Track:
         # - initialize track state and track score with appropriate values
         ############
 
-        self.x = np.matrix([[49.53980697],
-                        [ 3.41006279],
-                        [ 0.91790581],
-                        [ 0.        ],
-                        [ 0.        ],
-                        [ 0.        ]])
-        self.P = np.matrix([[9.0e-02, 0.0e+00, 0.0e+00, 0.0e+00, 0.0e+00, 0.0e+00],
-                        [0.0e+00, 9.0e-02, 0.0e+00, 0.0e+00, 0.0e+00, 0.0e+00],
-                        [0.0e+00, 0.0e+00, 6.4e-03, 0.0e+00, 0.0e+00, 0.0e+00],
-                        [0.0e+00, 0.0e+00, 0.0e+00, 2.5e+03, 0.0e+00, 0.0e+00],
-                        [0.0e+00, 0.0e+00, 0.0e+00, 0.0e+00, 2.5e+03, 0.0e+00],
-                        [0.0e+00, 0.0e+00, 0.0e+00, 0.0e+00, 0.0e+00, 2.5e+01]])
-        self.state = 'confirmed'
-        self.score = 0
+        x_h = np.matrix([[meas.z[0,0]],
+                        [meas.z[1,0]],
+                        [meas.z[2,0]],
+                        [ 1.        ]])
+
+        meas_veh = meas.sensor.sens_to_veh*x_h
+
+        self.x = np.matrix([[meas_veh[0,0]],
+                            [meas_veh[1,0]],
+                            [meas_veh[2,0]],
+                            [ 0.        ],
+                            [ 0.        ],
+                            [ 0.        ]])
+
+        self.P = np.matrix([[params.sigma_lidar_x*params.sigma_lidar_x, 0.0e+00, 0.0e+00, 0.0e+00, 0.0e+00, 0.0e+00],
+                            [0.0e+00, params.sigma_lidar_y*params.sigma_lidar_y, 0.0e+00, 0.0e+00, 0.0e+00, 0.0e+00],
+                            [0.0e+00, 0.0e+00, params.sigma_lidar_z*params.sigma_lidar_z, 0.0e+00, 0.0e+00, 0.0e+00],
+                            [0.0e+00, 0.0e+00, 0.0e+00, params.sigma_p44, 0.0e+00, 0.0e+00],
+                            [0.0e+00, 0.0e+00, 0.0e+00, 0.0e+00, params.sigma_p55, 0.0e+00],
+                            [0.0e+00, 0.0e+00, 0.0e+00, 0.0e+00, 0.0e+00, params.sigma_p66]])
+
+        self.state = 'initialized'
+        self.score = 1./params.window
         
         ############
         # END student code
@@ -61,6 +70,7 @@ class Track:
         self.height = meas.height
         self.yaw =  np.arccos(M_rot[0,0]*np.cos(meas.yaw) + M_rot[0,1]*np.sin(meas.yaw)) # transform rotation from sensor to vehicle coordinates
         self.t = meas.t
+        self.update_count = 1.0
 
     def set_x(self, x):
         self.x = x
@@ -99,18 +109,25 @@ class Trackmanagement:
         # - delete tracks if the score is too low or P is too big (check params.py for parameters that might be helpful, but
         # feel free to define your own parameters)
         ############
-        
         # decrease score for unassigned tracks
         for i in unassigned_tracks:
             track = self.track_list[i]
             # check visibility    
             if meas_list: # if not empty
                 if meas_list[0].sensor.in_fov(track.x):
-                    # your code goes here
-                    pass 
+                    if track.update_count >= 1 :
+                        track.update_count -= 1
+                        track.score = track.update_count/params.window
 
         # delete old tracks   
-
+        for i in range(len(self.track_list)) :
+            track = self.track_list[i]
+            if track.state == 'confirmed':
+                if(track.score < params.delete_threshold) :
+                    self.delete_track(track)
+            else:
+                if track.P[0,0] > params.max_P or track.P[1,1] > params.max_P:
+                    self.delete_track(track)
         ############
         # END student code
         ############ 
@@ -139,9 +156,15 @@ class Trackmanagement:
         # - increase track score
         # - set track state to 'tentative' or 'confirmed'
         ############
+        #         
+        if(track.update_count < params.window):
+            track.update_count += 1
+            track.score = track.update_count/params.window
 
-        pass
-        
+        if(track.score > params.confirmed_threshold):
+            track.state = 'confirmed'
+        elif(track.score > 0.4):
+             track.state = 'tentative'
         ############
         # END student code
         ############ 
