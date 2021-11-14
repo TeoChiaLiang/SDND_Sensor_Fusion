@@ -48,6 +48,6 @@ Notice the bumper of the outgoing vehicle remained stable as the it made the rig
 
 ## Compute precision and recall (ID_S4_EX3)
 <img src="img/Eval6.png" alt="drawing"/>
-precision = 0.9506578947368421, recall = 0.9444444444444444 [configs_det.use_labels_as_objects set to TRUE]
+precision = 0.9506578947368421, recall = 0.9444444444444444 [configs_det.use_labels_as_objects set to FALSE]
 <img src="img/Eval7.png" alt="drawing"/>  
-precision = 1.0, recall = 1.0 [configs_det.use_labels_as_objects set to False]
+precision = 1.0, recall = 1.0 [configs_det.use_labels_as_objects set to TRUE]
