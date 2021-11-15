@@ -64,10 +64,9 @@ class Filter:
         # TODO Step 1: predict state x and estimation error covariance P to next timestep, save x and P in track
         ############
         F = self.F()
-        x = F*track.x # state prediction
-        P = F*track.P*F.transpose() + self.Q() # covariance prediction
-        track.x = x
-        track.P = P  
+        Q = self.Q()
+        track.x = F*track.x # state prediction
+        track.P = F*track.P*F.transpose() + Q # covariance prediction
         ############
         # END student code
         ############ 
@@ -76,14 +75,14 @@ class Filter:
         ############
         # TODO Step 1: update state x and covariance P with associated measurement, save x and P in track
         ############
-        x = track.x
-        P = track.P
-        H = meas.sensor.get_H(x)
-        y = self.gamma(track, meas)
+        
+        H = meas.sensor.get_H(track.x)
         S = self.S(track, meas, H)
-        K = P*H.transpose()*np.linalg.inv(S) 
-        track.x = x + K*y 
-        track.P = (np.identity(self.dim_state) - K*H) * P 
+        K = track.P*H.transpose()*np.linalg.inv(S)
+        track.P = (np.identity(self.dim_state) - K*H) * track.P
+        
+        gamma = self.gamma(track, meas)
+        track.x = track.x + K*gamma 
         ############
         # END student code
         ############ 
@@ -93,9 +92,7 @@ class Filter:
         ############
         # TODO Step 1: calculate and return residual gamma
         ############
-        H = meas.sensor.get_H(track.x)
-        gamma = meas.z - H*track.x
-        return gamma       
+        return (meas.z - meas.sensor.get_hx(track.x))
         ############
         # END student code
         ############ 
@@ -104,8 +101,7 @@ class Filter:
         ############
         # TODO Step 1: calculate and return covariance of residual S
         ############
-        s = H*track.P*H.transpose() + meas.R # covariance of residual
-        return s
+        return (H*track.P*H.transpose() + meas.R)
         ############
         # END student code
         ############ 

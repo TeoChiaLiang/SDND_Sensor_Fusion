@@ -121,19 +121,17 @@ class Trackmanagement:
 
         # delete old tracks   
         
-        del_idx = []
+        del_track = []
         for i in range(len(self.track_list)) :       
             track = self.track_list[i]
-            if track.state == 'confirmed':
+            if track.P[0,0] > params.max_P or track.P[1,1] > params.max_P:
+                    del_track.append(track)
+            elif track.state == 'confirmed':
                 if(track.score < params.delete_threshold) :
-                    del_idx.append(i)
-            else:
-                if track.P[0,0] > params.max_P or track.P[1,1] > params.max_P:
-                    del_idx.append(i)
+                    del_track.append(track)
 
-        for i in range(len(del_idx)) :
-            track = self.track_list[del_idx[i]]
-            self.delete_track(track)     
+        for i in range(len(del_track)) :
+            self.delete_track(del_track[i])     
 
         ############
         # END student code

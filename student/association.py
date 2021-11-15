@@ -11,6 +11,7 @@
 #
 
 # imports
+from cv2 import sqrt
 import numpy as np
 from scipy.stats.distributions import chi2
 
@@ -38,21 +39,33 @@ class Association:
         # - update list of unassigned measurements and unassigned tracks
         ############
 
-        self.association_matrix = np.matrix([]) # reset matrix
-        self.unassigned_tracks = [] # reset lists
-        self.unassigned_meas = []
         N = len(track_list) # N tracks
         M = len(meas_list) # M measurements
         self.unassigned_tracks = list(range(N))
         self.unassigned_meas = list(range(M))
+
+        # initialize association matrix
         self.association_matrix = np.inf*np.ones((N,M)) 
+        # self.association_matrix2 = np.inf*np.ones((N,M)) 
+        # self.association_matrix3 = np.inf*np.ones((N,M)) 
+        # loop over all tracks and all measurements to set up association matrix
+        limit = 0
         for i in range(N): 
             track = track_list[i]
             for j in range(M):
                 meas = meas_list[j]
                 dist = self.MHD(track, meas, KF)
-                self.association_matrix[i,j] = dist 
-
+                y = KF.gamma(track, meas)
+                # self.association_matrix3[i,j] = sqrt(sum(i*i for i in y))
+                # self.association_matrix2[i,j] = dist
+                if self.gating(dist, meas.sensor):
+                    self.association_matrix[i,j] = dist
+        print("self.association_matrix: ")
+        print(self.association_matrix)
+        # print("self.association_matrix2: ")
+        # print(self.association_matrix2)
+        # print("self.association_matrix3: ")
+        # print(self.association_matrix3)
         ############
         # END student code
         ############ 
@@ -97,8 +110,7 @@ class Association:
         ############
         # TODO Step 3: return True if measurement lies inside gate, otherwise False
         ############
-        
-        limit = chi2.ppf(params.gating_threshold, df=2)
+        limit = chi2.ppf(params.gating_threshold, df = sensor.dim_meas)
         if MHD < limit:
             return True
         else:
@@ -112,12 +124,12 @@ class Association:
         ############
         # TODO Step 3: calculate and return Mahalanobis distance
         ############
+        gamma = KF.gamma(track, meas)
         H = meas.sensor.get_H(track.x)
-        gamma = meas.z - H*track.x
-        S = H*track.P*H.transpose() + meas.R
+        S = KF.S(track, meas, H)
         MHD = gamma.transpose()*np.linalg.inv(S)*gamma # Mahalanobis distance formula
         return MHD
-        
+
         ############
         # END student code
         ############ 
