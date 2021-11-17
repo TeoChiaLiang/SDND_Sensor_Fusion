@@ -45,27 +45,15 @@ class Association:
         self.unassigned_meas = list(range(M))
 
         # initialize association matrix
-        self.association_matrix = np.inf*np.ones((N,M)) 
-        # self.association_matrix2 = np.inf*np.ones((N,M)) 
-        # self.association_matrix3 = np.inf*np.ones((N,M)) 
+        self.association_matrix = np.inf*np.ones((N,M))
         # loop over all tracks and all measurements to set up association matrix
-        limit = 0
         for i in range(N): 
             track = track_list[i]
             for j in range(M):
                 meas = meas_list[j]
                 dist = self.MHD(track, meas, KF)
-                y = KF.gamma(track, meas)
-                # self.association_matrix3[i,j] = sqrt(sum(i*i for i in y))
-                # self.association_matrix2[i,j] = dist
                 if self.gating(dist, meas.sensor):
                     self.association_matrix[i,j] = dist
-        print("self.association_matrix: ")
-        print(self.association_matrix)
-        # print("self.association_matrix2: ")
-        # print(self.association_matrix2)
-        # print("self.association_matrix3: ")
-        # print(self.association_matrix3)
         ############
         # END student code
         ############ 
