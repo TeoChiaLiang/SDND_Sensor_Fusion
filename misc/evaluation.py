@@ -33,7 +33,7 @@ sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, PACKAGE_PARENT)))
 from tools.waymo_reader.simple_waymo_open_dataset_reader import label_pb2
     
 def plot_tracks(fig, ax, ax2, track_list, meas_list, lidar_labels, lidar_labels_valid, 
-                      image, camera, configs_det, state=None):
+                      image, camera, configs_det, meas_list_cam, state=None):
     
     # plot image
     ax.cla()
@@ -132,7 +132,23 @@ def plot_tracks(fig, ax, ax2, track_list, meas_list, lidar_labels, lidar_labels_
             p = patches.PathPatch(
                 path, fill=False, color=col, linewidth=3)
             ax2.add_patch(p)
-        
+
+  
+    for meas_cam in meas_list_cam:
+        rect = patches.Rectangle((meas_cam.z[0], meas_cam.z[1]), 10, 10, linewidth=10, edgecolor='b', facecolor='none')
+        ax2.add_patch(rect) 
+
+    for meas in meas_list:
+
+        pos_veh = np.ones((4, 1)) # homogeneous coordinates
+        pos_veh[0:3] = meas.z[0:3] 
+        pos_sens = camera.veh_to_sens*pos_veh # transform from vehicle to sensor coordinates
+
+        xi = camera.c_i - camera.f_i * pos_sens[1] / pos_sens[0]
+        yi = camera.c_j - camera.f_j * pos_sens[2] / pos_sens[0]
+        rect = patches.Rectangle((xi, yi), 10, 10, linewidth=10, edgecolor='g', facecolor='none')
+        ax2.add_patch(rect) 
+
     # plot labels
     for label, valid in zip(lidar_labels, lidar_labels_valid):
         if valid:        
