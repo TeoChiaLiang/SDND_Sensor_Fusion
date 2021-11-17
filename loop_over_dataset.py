@@ -257,7 +257,7 @@ while True:
             # visualization
             if 'show_tracks' in exec_list:
                 fig, ax, ax2 = plot_tracks(fig, ax, ax2, manager.track_list, meas_list_lidar, frame.laser_labels, 
-                                        valid_label_flags, image, camera, configs_det)
+                                        valid_label_flags, image, camera, configs_det, meas_list_cam)
                 if 'make_tracking_movie' in exec_list:
                     # save track plots to file
                     fname = results_fullpath + '/tracking%03d.png' % cnt_frame
