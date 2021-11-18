@@ -32,12 +32,12 @@ class Filter:
         ############
         # TODO Step 1: implement and return system matrix F
         ############
-        return np.matrix([[1, 0, 0, self.dt , 0         , 0],
-                          [0, 1, 0, 0       , self.dt   , 0],
-                          [0, 0, 1, 0       , 0         , 0],
-                          [0, 0, 0, 1       , 0         , 0],
-                          [0, 0, 0, 0       , 1         , 0],
-                          [0, 0, 0, 0       , 0         , 1]])
+        return np.matrix([[1, 0, 0, self.dt , 0         , 0         ],
+                          [0, 1, 0, 0       , self.dt   , 0         ],
+                          [0, 0, 1, 0       , 0         , self.dt   ],
+                          [0, 0, 0, 1       , 0         , 0         ],
+                          [0, 0, 0, 0       , 1         , 0         ],
+                          [0, 0, 0, 0       , 0         , 1         ]])
         ############
         # END student code
         ############ 
@@ -49,12 +49,12 @@ class Filter:
         q1 = ((self.dt**3)/3) * self.q 
         q2 = ((self.dt**2)/2) * self.q 
         q3 = self.dt * self.q 
-        return np.matrix([[q1, 0 , 0, q2, 0 , 0],
-                          [0 , q1, 0, 0 , q2, 0],
-                          [0 , 0 , 0, 0 , 0 , 0],
-                          [q2, 0 , 0, q3, 0 , 0],
-                          [0 , q2, 0, 0 , q3, 0],
-                          [0 , 0 , 0, 0 , 0 , 0]])
+        return np.matrix([[q1, 0 , 0 , q2, 0 , 0 ],
+                          [0 , q1, 0 , 0 , q2, 0 ],
+                          [0 , 0 , q1, 0 , 0 , q2],
+                          [q2, 0 , 0 , q3, 0 , 0 ],
+                          [0 , q2, 0 , 0 , q3, 0 ],
+                          [0 , 0 , q2, 0 , 0 , q3]])
         ############
         # END student code
         ############ 

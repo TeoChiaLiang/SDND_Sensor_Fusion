@@ -42,7 +42,7 @@ This step is to include camera measurement in the fusion system.
      * track state in sensor frame is then transform to image coordination using camera calibration params
   3) For measurement initialization, Z is initialized as a 2d vector using the detection centre and R is initialized 2x2 matrix with the diagonal set using value from the params.py
 
-<img src="img/FT_Ex4_RMSE.png"/><br />
+<img src="img/FT_Ex4_RMSE_New.png"/><br />
 RMSE Plot for step 4
 
 # Evaluation and Conclusion
