@@ -75,14 +75,13 @@ class Sensor:
             # - make sure to not divide by zero, raise an error if needed
             # - return h(x)
             ############
-            pos_veh = np.ones((4, 1)) # homogeneous coordinates
-            pos_veh[0:3] = x[0:3] 
-            pos_sens = self.veh_to_sens*pos_veh # transform from vehicle to lidar coordinates
-
             hx = np.zeros((2,1))
             if x[0]==0:
                 raise NameError('Jacobian not defined for x[0]=0!')
             else:
+                pos_veh = np.ones((4, 1)) # homogeneous coordinates
+                pos_veh[0:3] = x[0:3] 
+                pos_sens = self.veh_to_sens*pos_veh # transform from vehicle to lidar coordinates
                 # project to image coordinates
                 hx[0,0] = self.c_i - (self.f_i*pos_sens[1]/pos_sens[0]) 
                 hx[1,0] = self.c_j - (self.f_j*pos_sens[2]/pos_sens[0])

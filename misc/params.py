@@ -28,6 +28,7 @@ sigma_p66 = 5 # initial setting for estimation error covariance P entry for vz
 weight_dim = 0.1 # sliding average parameter for dimension estimation
 
 # association parameters (Step 3)
+gating_threshold_alt = 0.9999995 # percentage of correct measurements that shall lie inside gate
 gating_threshold = 0.995 # percentage of correct measurements that shall lie inside gate
 
 # measurement parameters (Step 4)

@@ -133,20 +133,19 @@ def plot_tracks(fig, ax, ax2, track_list, meas_list, lidar_labels, lidar_labels_
                 path, fill=False, color=col, linewidth=3)
             ax2.add_patch(p)
 
-  
+    # draw cam measure
     for meas_cam in meas_list_cam:
-        rect = patches.Rectangle((meas_cam.z[0], meas_cam.z[1]), 10, 10, linewidth=10, edgecolor='b', facecolor='none')
+        rect = patches.Rectangle((meas_cam.z[0], meas_cam.z[1]), 5, 5, linewidth=5, edgecolor='b', facecolor='none')
         ax2.add_patch(rect) 
 
+    # draw lidar measure
     for meas in meas_list:
-
         pos_veh = np.ones((4, 1)) # homogeneous coordinates
         pos_veh[0:3] = meas.z[0:3] 
         pos_sens = camera.veh_to_sens*pos_veh # transform from vehicle to sensor coordinates
-
         xi = camera.c_i - camera.f_i * pos_sens[1] / pos_sens[0]
         yi = camera.c_j - camera.f_j * pos_sens[2] / pos_sens[0]
-        rect = patches.Rectangle((xi, yi), 10, 10, linewidth=10, edgecolor='g', facecolor='none')
+        rect = patches.Rectangle((xi, yi), 5, 5, linewidth=5, edgecolor='g', facecolor='none')
         ax2.add_patch(rect) 
 
     # plot labels
